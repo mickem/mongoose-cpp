@@ -46,6 +46,7 @@
 #include <stdarg.h>
 
 #ifdef _WIN32
+#include <WinSock2.h>
 #include <windows.h>
 #include <process.h>    // For _beginthread
 #include <io.h>         // For _lseeki64
@@ -4053,8 +4054,9 @@ struct mg_server *mg_create_server(void *server_data) {
   server->do_i_handle = NULL;
 
 #ifdef _WIN32
-  WSADATA data;
-  WSAStartup(MAKEWORD(2, 2), &data);
+//  WSADATA data;
+//  WSAStartup(MAKEWORD(2, 2), &data);
+  WSAStartup(MAKEWORD(2, 2), NULL);
 #else
   // Ignore SIGPIPE signal, so if browser cancels the request, it
   // won't kill the whole process.
