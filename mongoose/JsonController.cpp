@@ -16,4 +16,4 @@ namespace Mongoose
         // Json content type is application/json
         response.setHeader("Content-type", "application/json");
     }            
-};
+}

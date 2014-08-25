@@ -4,7 +4,6 @@
 #include "Request.h"
 #include "Response.h"
 #include "Controller.h"
-#include "Sessions.h"
 #include "Mutex.h"
 #include "StreamResponse.h"
 #include "Utils.h"
@@ -12,7 +11,7 @@
 using namespace std;
 
 /**
- * A web controller is a controller that serves HTML pages and has sessions
+ * A web controller is a controller that serves HTML pages
  */
 namespace Mongoose
 {
@@ -26,16 +25,6 @@ namespace Mongoose
             WebController(int gcDivisor = 100);
 
             /**
-             * Gets the session for a request/response
-             *
-             * @param Request the request
-             * @param Response the response
-             *
-             * @return Session the session for the request/response
-             */
-            Session &getSession(Request &request, Response &response);
-
-            /**
              * Pre process the request, this will set the content type to text/html
              * and ping the user session
              *
@@ -45,10 +34,9 @@ namespace Mongoose
             void preProcess(Request &request, Response &response);
 
         protected:
-            Sessions sessions;
+            Mutex mutex;
             int gcDivisor;
             int counter;
-            Mutex mutex;
     };
 }
 

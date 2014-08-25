@@ -7,7 +7,7 @@ namespace Mongoose
 {
     Response::Response() : code(HTTP_OK), headers()
     {
-    };
+    }
             
     Response::~Response()
     {
@@ -60,4 +60,4 @@ namespace Mongoose
     {
         code = code_;
     }
-};
+}

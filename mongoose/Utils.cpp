@@ -1,6 +1,12 @@
 #include <iostream>
 #include <sstream>
 #include "Utils.h"
+#ifndef MSVC
+#include <unistd.h>
+#endif
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 using namespace std;
 
@@ -23,5 +29,14 @@ namespace Mongoose
         }
 
         return buffer;
+    }
+
+    void Utils::sleep(int ms)
+    {
+#ifdef WIN32
+	Sleep(ms);
+#else
+    usleep(1000 * ms);
+#endif
     }
 }

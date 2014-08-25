@@ -9,4 +9,4 @@ namespace Mongoose
     {
         return this->str();
     }
-};
+}

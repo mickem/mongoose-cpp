@@ -9,6 +9,7 @@
 #include <string.h>
 #include <iostream>
 #include "Server.h"
+#include "Utils.h"
 
 using namespace std;
 using namespace Mongoose;
@@ -74,10 +75,12 @@ static void *server_poll(void *param)
 namespace Mongoose
 {
     Server::Server(int port, const char *documentRoot)
-        : server(NULL),
-        stopped(false)
+        : 
+        stopped(false),
+        destroyed(false),
+        server(NULL)
 #ifndef NO_WEBSOCKET 
-          ,websockets(NULL)
+        ,websockets(NULL)
 #endif
 
     {
@@ -101,7 +104,7 @@ namespace Mongoose
             startTime = getTime();
 #endif
             server = mg_create_server(this);
-            size_t size = optionsMap.size()*2+1;
+            // size_t size = optionsMap.size()*2+1;
 
             map<string, string>::iterator it;
             for (it=optionsMap.begin(); it!=optionsMap.end(); it++) {
@@ -120,7 +123,7 @@ namespace Mongoose
 
     void Server::poll()
     {
-        unsigned int current_timer = 0;
+        // unsigned int current_timer = 0;
         while (!stopped) {
             mg_poll_server(server, 1000);
 #ifndef NO_WEBSOCKET
@@ -129,15 +132,20 @@ namespace Mongoose
         }
 
         mg_destroy_server(&server);
+        destroyed = true;
     }
 
     void Server::stop()
     {
         stopped = true;
+        while (!destroyed) {
+            Utils::sleep(100);
+        }
     }
 
     void Server::registerController(Controller *controller)
     {
+        controller->setSessions(&sessions);
         controller->setServer(this);
         controller->setup();
         controllers.push_back(controller);
@@ -263,4 +271,4 @@ namespace Mongoose
             cout << "Requests: " << requests << ", Requests/s: " << (requests*1.0/delta) << endl;
         }
     }
-};
+}

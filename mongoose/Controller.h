@@ -7,6 +7,7 @@
 #include "RequestHandler.h"
 #include "StreamResponse.h"
 #include "WebSocket.h"
+#include "Sessions.h"
 
 using namespace std;
 
@@ -125,10 +126,28 @@ namespace Mongoose
              */
             virtual Response *serverInternalError(string message);
 
-            virtual bool handles(string method, string url);
+            /**
+             * Gets the session for a request/response
+             *
+             * @param Request the request
+             * @param Response the response
+             *
+             * @return Session the session for the request/response
+             */
+            Session &getSession(Request &request, Response &response);
+
+            /**
+             * Sets the sessions
+             *
+             * @param Sessions* the pointer to the sessions jar
+             */
+            void setSessions(Sessions *sessions);
+
+            bool handles(string method, string url);
             vector<string> getUrls();
 
         protected:
+            Sessions *sessions;
             Server *server;
             string prefix;
             map<string, RequestHandlerBase*> routes;

@@ -3,8 +3,11 @@
 
 namespace Mongoose
 {        
-    WebController::WebController(int gcDivisor_) :
-        gcDivisor(gcDivisor_), counter(0), Controller()
+    WebController::WebController(int gcDivisor_) 
+        : 
+        Controller(),
+        gcDivisor(gcDivisor_),
+        counter(0)
     {
     }
 
@@ -15,17 +18,12 @@ namespace Mongoose
 
         if (counter > gcDivisor) {
             counter = 0;
-            sessions.garbageCollect();
+            sessions->garbageCollect();
         }
         mutex.unlock();
 
-        Session &session = sessions.get(request, response);
+        Session &session = sessions->get(request, response);
         session.ping();
         response.setHeader("Content-type", "text/html");
     }
-
-    Session &WebController::getSession(Request &request, Response &response)
-    {
-        return sessions.get(request, response);
-    }
-};
+}

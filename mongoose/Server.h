@@ -12,6 +12,7 @@
 #include "WebSockets.h"
 #endif
 #include "Mutex.h"
+#include "Sessions.h"
 
 using namespace std;
 
@@ -127,6 +128,8 @@ namespace Mongoose
 
         protected:
             volatile bool stopped;
+            volatile bool destroyed;
+            Sessions sessions;
             Mutex mutex;
             map<string, string> optionsMap;
             map<struct mg_connection*, Request *> currentRequests;

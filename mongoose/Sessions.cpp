@@ -10,7 +10,8 @@ static char charset[] = "abcdeghijklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234
 
 namespace Mongoose
 {
-    Sessions::Sessions(string key_) : key(key_), sessions()
+    Sessions::Sessions(string key_) 
+        : sessions(), key(key_)
     {
     }
 	
@@ -79,4 +80,4 @@ namespace Mongoose
         }
         mutex.unlock();
     }
-};
+}

@@ -28,6 +28,7 @@ static void mg_strlcpy(register char *dst, register const char *src, size_t n) {
   *dst = '\0';
 }
 
+/*
 static int mg_strcasecmp(const char *s1, const char *s2) {
   int diff;
 
@@ -37,6 +38,7 @@ static int mg_strcasecmp(const char *s1, const char *s2) {
 
   return diff;
 }
+*/
 
 static const char *mg_strcasestr(const char *big_str, const char *small_str) {
   int i, big_len = strlen(big_str), small_len = strlen(small_str);
@@ -154,10 +156,8 @@ namespace Mongoose
 
     bool Request::readVariable(const char *data, string key, string &output)
     {
-        int size = 1024;
-        int ret, n;
+        int size = 1024, ret;
         char *buffer = new char[size];
-        n = strlen(data);
 
         do {
             ret = mg_get_var(connection, key.c_str(), buffer, size);
@@ -270,4 +270,4 @@ namespace Mongoose
             uploadFiles.push_back(UploadFile(string(file_name), string(data, data_len)));
         }
     }
-};
+}
