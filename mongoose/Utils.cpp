@@ -1,7 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include "Utils.h"
-#ifndef MSVC
+#ifndef WIN32
 #include <unistd.h>
 #endif
 #ifdef WIN32
