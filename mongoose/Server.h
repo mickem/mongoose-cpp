@@ -30,7 +30,7 @@ namespace Mongoose
              * @param int the number of the port to listen to
              * @param string documentRoot the root that should be used for static files
              */
-            Server(int port = 80, const char *documentRoot = "www");
+            Server(const char *port = "80", const char *documentRoot = "www");
             virtual ~Server();
 
             /**

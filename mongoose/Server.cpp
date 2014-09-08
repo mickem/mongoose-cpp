@@ -74,7 +74,7 @@ static void *server_poll(void *param)
 
 namespace Mongoose
 {
-    Server::Server(int port, const char *documentRoot)
+    Server::Server(const char *port, const char *documentRoot)
         : 
         stopped(false),
         destroyed(false),
@@ -84,9 +84,7 @@ namespace Mongoose
 #endif
 
     {
-        ostringstream portOss;
-        portOss << port;
-        optionsMap["listening_port"] = portOss.str();
+        optionsMap["listening_port"] = string(port);
         optionsMap["document_root"] = string(documentRoot);
         optionsMap["enable_keep_alive"] = "yes";
     }
