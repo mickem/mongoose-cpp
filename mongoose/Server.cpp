@@ -25,31 +25,32 @@ static int getTime()
 #endif
 }
 
-static int do_i_handle(struct mg_connection *connection)
-{
-    Server *server = (Server *)connection->server_param;
-
-    return server->handles(connection->request_method, connection->uri);
-}
-
 /**
  * The handlers below are written in C to do the binding of the C mongoose with
  * the C++ API
  */
-static int event_handler(struct mg_connection *connection)
+static int event_handler(struct mg_connection *connection, enum mg_event ev)
 {
     Server *server = (Server *)connection->server_param;
 
-    if (server != NULL) {
+	if (server != NULL) {
+
+		if (ev == MG_AUTH) {
+			return MG_TRUE;
+		} else if (ev == MG_REQUEST) {
 #ifndef NO_WEBSOCKET
-        if (connection->is_websocket) {
-            server->_webSocketReady(connection);
-        }
+			if (connection->is_websocket) {
+				server->_webSocketReady(connection);
+			}
 #endif
-        server->_handleRequest(connection);
+			server->_handleRequest(connection);
+			return MG_TRUE;
+		} else {
+			return MG_FALSE;
+		}
     }
 
-    return 1;
+    return MG_FALSE;
 }
 
 #ifndef NO_WEBSOCKET
@@ -101,16 +102,13 @@ namespace Mongoose
             requests = 0;
             startTime = getTime();
 #endif
-            server = mg_create_server(this);
+            server = mg_create_server(this, event_handler);
             // size_t size = optionsMap.size()*2+1;
 
             map<string, string>::iterator it;
             for (it=optionsMap.begin(); it!=optionsMap.end(); it++) {
-                mg_set_option(server, (*it).first.c_str(), (*it).second.c_str());
+                const char* err = mg_set_option(server, (*it).first.c_str(), (*it).second.c_str());
             }
-
-            mg_add_uri_handler(server, "/", event_handler);
-            mg_server_do_i_handle(server, do_i_handle);
 
             stopped = false;
             mg_start_thread(server_poll, this);
