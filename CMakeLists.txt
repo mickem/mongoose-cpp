@@ -23,6 +23,12 @@ option (ENABLE_STATS
 option (ENABLE_REGEX_URL
     "Enable url regex matching dispatcher" OFF)
 
+option (ENABLE_SSL
+    "Enables SSL (set openssl include with OPENSSL_INCLUDE_DIR" OFF)
+
+option (ENABLE_DEBUG
+    "Enable debug" OFF)
+
 set (JSONCPP_DIR "${PROJECT_SOURCE_DIR}/../jsoncpp"
     CACHE STRING "Json C++ directory")
 
@@ -43,6 +49,14 @@ if (ENABLE_REGEX_URL)
     SET (CMAKE_CXX_FLAGS "-std=c++11")
 endif (ENABLE_REGEX_URL)
 
+if (ENABLE_SSL)
+	include_directories("${OPENSSL_INCLUDE_DIR}")
+    add_definitions("-DNS_ENABLE_SSL")
+endif (ENABLE_SSL)
+
+if (ENABLE_DEBUG)
+    add_definitions("-DNS_ENABLE_DEBUG")
+endif (ENABLE_DEBUG)
 
 if (CPP_BINDING)
     set (SOURCES
