@@ -143,7 +143,7 @@ namespace Mongoose
              */
             void setSessions(Sessions *sessions);
 
-            bool handles(string method, string url);
+            virtual bool handles(string method, string url);
             vector<string> getUrls();
 
         protected:
