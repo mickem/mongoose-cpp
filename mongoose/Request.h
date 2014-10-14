@@ -80,6 +80,12 @@ namespace Mongoose
             string getMethod();
             string getData();
 
+
+			typedef pair<string,string> arg_entry;
+			typedef vector<arg_entry> arg_vector;
+			typedef map<string,string> arg_map;
+			arg_vector getVariablesVector();
+
 #ifdef ENABLE_REGEX_URL
             smatch getMatches();
             bool match(string pattern);

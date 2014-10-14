@@ -154,6 +154,50 @@ namespace Mongoose
         return false;
     }
 
+	Request::arg_vector get_var_vector(const char *data, size_t data_len) {
+		Request::arg_vector ret;
+
+		if (data == NULL || data_len == 0)
+			return ret;
+		
+		istringstream f(string(data, data_len));
+		string s;    
+		char *tmp = new char[data_len+1];
+		// data is "var1=val1&var2=val2...". Find variable first
+		while (getline(f, s, '&')) {
+			string::size_type eq_pos = s.find('=');
+			string key, val;
+			if (eq_pos != string::npos) {
+				key = s.substr(0, eq_pos);
+				val = s.substr(eq_pos+1);
+			} else {
+				key = s;
+			}
+			if (mg_url_decode(key.c_str(), key.length(), tmp, data_len, 1) < 0) {
+				delete [] tmp;
+				return ret;
+			}
+			key = tmp;
+			if (val.length() > 0) {
+				if (mg_url_decode(val.c_str(), val.length(), tmp, data_len, 1) < 0) {
+					delete [] tmp;
+					return ret;
+				}
+				val = tmp;
+			}
+			ret.push_back(Request::arg_entry(key, val));
+		}
+		delete [] tmp;
+		return ret;
+	}
+
+
+	Request::arg_vector Request::getVariablesVector() {
+		return get_var_vector(connection->query_string, connection->query_string == NULL ? 0 : strlen(connection->query_string));
+// 		if (len < 0)
+// 			len = get_var_vector(conn->content, conn->content_len);
+	}
+
     bool Request::readVariable(const char *data, string key, string &output)
     {
         int size = 1024, ret;
