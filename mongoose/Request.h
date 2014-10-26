@@ -90,6 +90,7 @@ namespace Mongoose
             smatch getMatches();
             bool match(string pattern);
 #endif
+			std::string readHeader(const std::string key);
             bool readVariable(const char *data, string key, string &output);
 
             /**

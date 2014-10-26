@@ -173,13 +173,13 @@ namespace Mongoose
 			} else {
 				key = s;
 			}
-			if (mg_url_decode(key.c_str(), key.length(), tmp, data_len, 1) < 0) {
+			if (mg_url_decode(key.c_str(), key.length(), tmp, data_len+1, 1) == -1) {
 				delete [] tmp;
 				return ret;
 			}
 			key = tmp;
 			if (val.length() > 0) {
-				if (mg_url_decode(val.c_str(), val.length(), tmp, data_len, 1) < 0) {
+				if (mg_url_decode(val.c_str(), val.length(), tmp, data_len+1, 1) == -1) {
 					delete [] tmp;
 					return ret;
 				}
@@ -196,6 +196,14 @@ namespace Mongoose
 		return get_var_vector(connection->query_string, connection->query_string == NULL ? 0 : strlen(connection->query_string));
 // 		if (len < 0)
 // 			len = get_var_vector(conn->content, conn->content_len);
+	}
+
+	std::string Request::readHeader(const std::string key) {
+		const char *value = mg_get_header(connection, key.c_str());
+		if (value == NULL)
+			return "";
+		return value;
+
 	}
 
     bool Request::readVariable(const char *data, string key, string &output)
