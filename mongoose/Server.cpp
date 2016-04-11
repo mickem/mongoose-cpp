@@ -78,7 +78,7 @@ namespace Mongoose
     Server::Server(const char *port, const char *documentRoot)
         : 
         stopped(false),
-        destroyed(false),
+        destroyed(true),
         server(NULL)
 #ifndef NO_WEBSOCKET 
         ,websockets(NULL)
@@ -119,6 +119,8 @@ namespace Mongoose
 
     void Server::poll()
     {
+		if (!stopped)
+			destroyed = false;
         // unsigned int current_timer = 0;
         while (!stopped) {
             mg_poll_server(server, 1000);
