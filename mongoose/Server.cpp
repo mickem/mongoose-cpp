@@ -108,7 +108,9 @@ namespace Mongoose
             map<string, string>::iterator it;
             for (it=optionsMap.begin(); it!=optionsMap.end(); it++) {
                 const char* err = mg_set_option(server, (*it).first.c_str(), (*it).second.c_str());
-            }
+				if (err)
+					throw string("Failed to set " + (*it).first + ": " + err);
+			}
 
             stopped = false;
             mg_start_thread(server_poll, this);
