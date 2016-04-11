@@ -120,6 +120,10 @@ namespace Mongoose
         return data;
     }
 
+	string Request::getRemoteIp() {
+		return connection->remote_ip;
+	}
+
 #ifdef ENABLE_REGEX_URL
     smatch Request::getMatches()
     {   

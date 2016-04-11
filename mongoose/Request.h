@@ -79,6 +79,7 @@ namespace Mongoose
             string getUrl();
             string getMethod();
             string getData();
+            string getRemoteIp();
 
 
 			typedef pair<string,string> arg_entry;
