@@ -87,7 +87,6 @@ namespace Mongoose
     {
         optionsMap["listening_port"] = string(port);
         optionsMap["document_root"] = string(documentRoot);
-        optionsMap["enable_keep_alive"] = "yes";
     }
 
     Server::~Server()
