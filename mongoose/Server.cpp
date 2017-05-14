@@ -92,6 +92,10 @@ namespace Mongoose
     Server::~Server()
     {
         stop();
+		vector<Controller *>::iterator it;
+		for (it = controllers.begin(); it != controllers.end(); it++) {
+			delete (*it);
+		}
     }
 
     void Server::start()
