@@ -31,7 +31,7 @@ namespace Mongoose
         return buffer;
     }
 
-    void Utils::sleep(int ms)
+    void Utils::xsleep(int ms)
     {
 #ifdef WIN32
 	Sleep(ms);

@@ -25,20 +25,20 @@ namespace Mongoose
 
     string Sessions::getId(Request &request, Response &response)
     {
-        if (request.hasCookie(key)) {
-            return request.getCookie(key);
-        } else {
-            ostringstream newCookie;
-            int i;
+		std::string curr = request.getCookie(key);
+		if (!curr.empty()) {
+			return curr;
+		}
+        ostringstream newCookie;
+        int i;
 
-            for (i=0; i<30; i++) {
-                newCookie << charset[rand()%CHARSET_SIZE];
-            }
-
-            response.setCookie(key, newCookie.str());
-
-            return newCookie.str();
+        for (i=0; i<30; i++) {
+            newCookie << charset[rand()%CHARSET_SIZE];
         }
+
+        response.setCookie(key, newCookie.str());
+
+        return newCookie.str();
     }
 
     Session &Sessions::get(Request &request, Response &response)

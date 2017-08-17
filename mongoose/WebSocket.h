@@ -25,7 +25,7 @@ namespace Mongoose
              *
              * @param string the data to send
              */
-            void send(string data, int opcode = WEBSOCKET_OPCODE_TEXT);
+            void send(string data, int opcode = WEBSOCKET_OP_TEXT);
 
             /**
              * Returns the connection request

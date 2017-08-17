@@ -93,15 +93,16 @@ static int mg_get_cookie(const char *cookie_header, const char *var_name,
 
 namespace Mongoose
 {
-    Request::Request(struct mg_connection *connection_) :
-        connection(connection_)
+    Request::Request(struct mg_connection *connection_, struct http_message *message_) 
+		: connection(connection_)
+		, message(message_)
     {
-        url = string(connection->uri);
-        method = string(connection->request_method);
+        url = std::string(message->uri.p, message->uri.len);
+        method = std::string(message->method.p, message->method.len);
 
         // Downloading POST data
         ostringstream postData;
-        postData.write(connection->content, connection->content_len);
+        postData.write(message->body.p, message->body.len);
         data = postData.str();
     }
 
@@ -121,7 +122,7 @@ namespace Mongoose
     }
 
 	string Request::getRemoteIp() {
-		return connection->remote_ip;
+		return std::string(inet_ntoa(connection->sa.sin.sin_addr));
 	}
 
 #ifdef ENABLE_REGEX_URL
@@ -141,20 +142,16 @@ namespace Mongoose
     {
         string data = response->getData();
 
-        mg_write(connection, data.c_str(), data.size());
+		mg_send(connection, data.c_str(), data.size());
     }
 
     bool Request::hasVariable(string key)
     {
-        const char *dataField;
-        char dummy[10];
-
-        // Looking on the query string
-        dataField = connection->query_string;
-        if (dataField != NULL && mg_get_var(connection, key.c_str(), dummy, 1) != -1) {
-            return true;
-        }
-
+		for (int i = 0 ; i < ARRAY_SIZE(message->header_names); i++) {
+			if (strcmp(message->header_names[i].p, key.c_str()) == 0) {
+				return true;
+			}
+		}
         return false;
     }
 
@@ -197,26 +194,26 @@ namespace Mongoose
 
 
 	Request::arg_vector Request::getVariablesVector() {
-		return get_var_vector(connection->query_string, connection->query_string == NULL ? 0 : strlen(connection->query_string));
+		return get_var_vector(message->query_string.p, message->query_string.p == NULL ? 0 : message->query_string.len);
 // 		if (len < 0)
 // 			len = get_var_vector(conn->content, conn->content_len);
 	}
 
 	std::string Request::readHeader(const std::string key) {
-		const char *value = mg_get_header(connection, key.c_str());
-		if (value == NULL)
+		struct mg_str *value = mg_get_http_header(message, key.c_str());
+		if (value == NULL || value->len == 0)
 			return "";
-		return value;
+		return std::string(value->p, value->len);
 
 	}
 
-    bool Request::readVariable(const char *data, string key, string &output)
+    bool Request::readVariable(const struct mg_str data, string key, string &output)
     {
         int size = 1024, ret;
         char *buffer = new char[size];
 
         do {
-            ret = mg_get_var(connection, key.c_str(), buffer, size);
+            ret = mg_get_http_var(&data, key.c_str(), buffer, size);
 
             if (ret == -1) {
 				delete[] buffer;
@@ -239,80 +236,52 @@ namespace Mongoose
 
     string Request::get(string key, string fallback)
     {
-        const char *dataField;
         string output;
 
         // Looking on the query string
-        dataField = connection->query_string;
-        if (dataField != NULL && readVariable(dataField, key, output)) {
+        struct mg_str dataField = message->query_string;
+        if (readVariable(dataField, key, output)) {
             return output;
         }
 
         // Looking on the POST data
-        dataField = data.c_str();
-        if (dataField != NULL && readVariable(dataField, key, output)) {
-            return output;
-        }
+//         dataField = data.c_str();
+//         if (dataField != NULL && readVariable(dataField, key, output)) {
+//             return output;
+//         }
 
         return fallback;
     }
 
-    bool Request::hasCookie(string key)
-    {
-        int i;
-        char dummy[10];
-
-        for (i=0; i<connection->num_headers; i++) {
-            const struct mg_connection::mg_header *header = &connection->http_headers[i];
-
-            if (strcmp(header->name, "Cookie") == 0) {
-                if (mg_get_cookie(header->value, key.c_str(), dummy, sizeof(dummy)) != -1) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     string Request::getCookie(string key, string fallback)
     {
-        string output;
-        int i;
-        int size = 1024;
-        int ret;
-        char *buffer = new char[size];
-        char dummy[10];
-        const char *place = NULL;
-
-        for (i=0; i<connection->num_headers; i++) {
-            const struct mg_connection::mg_header *header = &connection->http_headers[i];
-
-            if (strcmp(header->name, "Cookie") == 0) {
-                if (mg_get_cookie(header->value, key.c_str(), dummy, sizeof(dummy)) != -1) {
-                    place = header->value;
-                }
-            }
-        }
-
-        if (place == NULL) {
-            return fallback;
-        }
-
-        do {
-            ret = mg_get_cookie(place, key.c_str(), buffer, size);
-
-            if (ret == -2) {
-                size *= 2;
-                delete[] buffer;
-                buffer = new char[size];
-            }
-        } while (ret == -2);
-
-        output = string(buffer);
-        delete[] buffer;
-
-        return output;
+		mg_str *tmp = mg_get_http_header(message, "cookie");
+		if (tmp == NULL || tmp->len == 0) {
+			return fallback;
+		}
+		int ret = -1;
+		int size = 1024;
+		char* buffer = new char[size];
+		std::string data = std::string(tmp->p, tmp->len);
+		do {
+			ret = mg_get_cookie(data.c_str(), key.c_str(), buffer, size);
+			if (ret >= 0) {
+				std::string ret = buffer;
+				delete[] buffer;
+				return ret;
+			}
+			if (ret == -1) {
+				delete[] buffer;
+				return fallback;
+			}
+			if (ret == -3) {
+				size *= 2;
+				delete[] buffer;
+				buffer = new char[size];
+			}
+		} while (ret == -3);
+		delete[] buffer;
+		return fallback;
     }
             
     void Request::handleUploads()
@@ -320,9 +289,9 @@ namespace Mongoose
         char var_name[1024];
         char file_name[1024];
         const char *data;
-        int data_len;
+        size_t data_len;
 
-        if (mg_parse_multipart(connection->content, connection->content_len,
+        if (mg_parse_multipart(message->body.p, message->body.len,
                     var_name, sizeof(var_name), file_name, sizeof(file_name), &data, &data_len)) {
             uploadFiles.push_back(UploadFile(string(file_name), string(data, data_len)));
         }

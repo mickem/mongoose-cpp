@@ -29,28 +29,28 @@ static int getTime()
  * The handlers below are written in C to do the binding of the C mongoose with
  * the C++ API
  */
-static int event_handler(struct mg_connection *connection, enum mg_event ev)
+static void event_handler(struct mg_connection *connection, int ev, void *ev_data)
 {
-    Server *server = (Server *)connection->server_param;
+	struct http_message *message = (struct http_message *) ev_data;
+    Server *server = (Server *)connection->user_data;
 
 	if (server != NULL) {
-
-		if (ev == MG_AUTH) {
-			return MG_TRUE;
-		} else if (ev == MG_REQUEST) {
+		if (ev == MG_EV_HTTP_REQUEST) {
 #ifndef NO_WEBSOCKET
 			if (connection->is_websocket) {
-				server->_webSocketReady(connection);
+				server->_webSocketReady(connection, message);
 			}
 #endif
-			server->_handleRequest(connection);
-			return MG_TRUE;
-		} else {
-			return MG_FALSE;
+			if (!server->_handleRequest(connection, message)) {
+				static struct mg_serve_http_opts s_http_server_opts;
+
+				s_http_server_opts.document_root = "C:\\source\\build\\x64\\dev\\web";  // Serve current directory
+				s_http_server_opts.enable_directory_listing = "yes";
+
+				mg_serve_http(connection, message, s_http_server_opts);
+			}
 		}
     }
-
-    return MG_FALSE;
 }
 
 #ifndef NO_WEBSOCKET
@@ -75,17 +75,19 @@ static void *server_poll(void *param)
 
 namespace Mongoose
 {
-    Server::Server(const char *port, const char *documentRoot)
-        : 
-        stopped(false),
-        destroyed(true),
-        server(NULL)
+    Server::Server(const char *port_, const char *documentRoot)
+        :  stopped(false)
+		, destroyed(true)
+		, port(port_)
 #ifndef NO_WEBSOCKET 
-        ,websockets(NULL)
+        , websockets(NULL)
 #endif
 
     {
-        optionsMap["listening_port"] = string(port);
+		//memset(&mgr, 0, sizeof(mgr));
+		mgr.user_data = this;
+		mg_mgr_init(&mgr, NULL);
+		memset(&opts, 0, sizeof(opts));
         optionsMap["document_root"] = string(documentRoot);
     }
 
@@ -98,28 +100,35 @@ namespace Mongoose
 		}
     }
 
+	void Server::setSsl(const char *certificate) {
+		opts.ssl_cert = certificate;
+	}
+
+
     void Server::start()
     {
-        if (server == NULL) {
-#ifdef ENABLE_STATS
-            requests = 0;
-            startTime = getTime();
-#endif
-            server = mg_create_server(this, event_handler);
-            // size_t size = optionsMap.size()*2+1;
+		const char *err = "";
+		opts.error_string = &err;
+		opts.user_data = this;
+		server_connection = mg_bind_opt(&mgr, port.c_str(), event_handler, opts);
+		if (server_connection == NULL) {
+			throw mongoose_exception(err);
+		}
+		mg_set_protocol_http_websocket(server_connection);
 
-            map<string, string>::iterator it;
-            for (it=optionsMap.begin(); it!=optionsMap.end(); it++) {
-                const char* err = mg_set_option(server, (*it).first.c_str(), (*it).second.c_str());
-				if (err)
-					throw string("Failed to set " + (*it).first + ": " + err);
-			}
 
-            stopped = false;
-            mg_start_thread(server_poll, this);
-        } else {
-            throw string("Server is already running");
-        }
+        // size_t size = optionsMap.size()*2+1;
+
+//             map<string, string>::iterator it;
+//             for (it=optionsMap.begin(); it!=optionsMap.end(); it++) {
+//                 const char* err = mg_set_option(server, (*it).first.c_str(), (*it).second.c_str());
+// 				if (err)
+// 					throw string("Failed to set " + (*it).first + ": " + err);
+// 			}
+
+        stopped = false;
+
+        mg_start_thread(server_poll, this);
     }
 
     void Server::poll()
@@ -128,21 +137,21 @@ namespace Mongoose
 			destroyed = false;
         // unsigned int current_timer = 0;
         while (!stopped) {
-            mg_poll_server(server, 1000);
+			mg_mgr_poll(&mgr, 1000);
 #ifndef NO_WEBSOCKET
             mg_iterate_over_connections(server, iterate_callback, &current_timer);
 #endif
         }
 
-        mg_destroy_server(&server);
         destroyed = true;
+		mg_mgr_free(&mgr);
     }
 
     void Server::stop()
     {
         stopped = true;
         while (!destroyed) {
-            Utils::sleep(100);
+            Utils::xsleep(100);
         }
     }
 
@@ -192,26 +201,18 @@ namespace Mongoose
     }
 #endif
 
-    int Server::_handleRequest(struct mg_connection *conn)
+    bool Server::_handleRequest(struct mg_connection *connection, struct http_message *message)
     {
-        Request request(conn);
-
-        mutex.lock();
-        currentRequests[conn] = &request;
-        mutex.unlock();
+        Request request(connection, message);
 
         Response *response = handleRequest(request);
 
-        mutex.lock();
-        currentRequests.erase(conn);
-        mutex.unlock();
-
         if (response == NULL) {
-            return 0;
+            return false;
         } else {
             request.writeResponse(response);
             delete response;
-            return 1;
+            return true;
         }
     }
 
@@ -238,10 +239,6 @@ namespace Mongoose
         Response *response;
         vector<Controller *>::iterator it;
 
-        mutex.lock();
-        requests++;
-        mutex.unlock();
-
         for (it=controllers.begin(); it!=controllers.end(); it++) {
             Controller *controller = *it;
             response = controller->process(request);
@@ -266,12 +263,4 @@ namespace Mongoose
     }
 #endif
 
-    void Server::printStats()
-    {
-        int delta = getTime()-startTime;
-
-        if (delta) {
-            cout << "Requests: " << requests << ", Requests/s: " << (requests*1.0/delta) << endl;
-        }
-    }
 }

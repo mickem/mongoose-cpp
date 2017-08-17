@@ -52,6 +52,7 @@ endif (ENABLE_REGEX_URL)
 if (ENABLE_SSL)
 	include_directories("${OPENSSL_INCLUDE_DIR}")
     add_definitions("-DNS_ENABLE_SSL")
+    add_definitions("-DMG_ENABLE_SSL")
 endif (ENABLE_SSL)
 
 if (ENABLE_DEBUG)

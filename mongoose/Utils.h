@@ -1,17 +1,16 @@
 #ifndef _MONGOOSE_UTILS_H
 #define _MONGOOSE_UTILS_H
+#pragma once
 
-#include <iostream>
-
-using namespace std;
+#include <string>
 
 namespace Mongoose
 {
     class Utils
     {
         public:
-            static string htmlEntities(string data);
-            static void sleep(int ms);
+            static std::string htmlEntities(std::string data);
+            static void xsleep(int ms);
     };
 }
 

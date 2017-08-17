@@ -21,7 +21,7 @@ namespace Mongoose
     class Request
     {
         public:
-            Request(struct mg_connection *connection);
+            Request(struct mg_connection *connection, struct http_message *message);
 
             /**
              * Sends a given response to the client
@@ -48,15 +48,6 @@ namespace Mongoose
              * @return string the value of the variable if it exists, fallback else
              */
             string get(string key, string fallback = "");
-
-            /**
-             * Checks if the given cookie exists
-             *
-             * @param string the name of the cookie
-             *
-             * @return bool true if the given cookie is set
-             */
-            bool hasCookie(string key);
 
             /**
              * Try to get the cookie value
@@ -92,7 +83,7 @@ namespace Mongoose
             bool match(string pattern);
 #endif
 			std::string readHeader(const std::string key);
-            bool readVariable(const char *data, string key, string &output);
+            bool readVariable(const struct mg_str data, string key, string &output);
 
             /**
              * Files uploaded in this request
@@ -104,6 +95,7 @@ namespace Mongoose
             string url;
             string data;
             struct mg_connection *connection;
+			struct http_message *message;
     };
 }
 

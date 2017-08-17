@@ -2,11 +2,11 @@
 #define _MONGOOSE_WEB_CONTROLLER_H
 
 #include "Request.h"
+#include "Utils.h"
 #include "Response.h"
 #include "Controller.h"
 #include "Mutex.h"
 #include "StreamResponse.h"
-#include "Utils.h"
 
 using namespace std;
 

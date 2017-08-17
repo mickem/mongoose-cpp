@@ -21,6 +21,22 @@ using namespace std;
  */
 namespace Mongoose
 {
+
+	class mongoose_exception : public std::exception {
+	private:
+		std::string error;
+	public:
+		mongoose_exception(std::string error) : error(error) {};
+		~mongoose_exception() throw() {}
+
+		const char* what() const throw() {
+			return error.c_str();
+		}
+		std::string reason() const throw() {
+			return error;
+		}
+	};
+
     class Server
     {
         public:
@@ -55,7 +71,7 @@ namespace Mongoose
              *
              * @param struct mg_connection* the mongoose connection
              */
-            int _handleRequest(struct mg_connection *conn);
+            bool _handleRequest(struct mg_connection *connection, struct http_message *message);
 
             /**
              * Internally used to process a file upload
@@ -94,6 +110,14 @@ namespace Mongoose
              */
             Response *handleRequest(Request &request);
 
+			
+
+			/**
+			* Setup the mongoose ssl options section
+			*
+			* @param certificate the name of the certificate to use
+			*/
+			void setSsl(const char *certificate);
             /**
              * Sets a mongoose extra option
              *
@@ -127,23 +151,21 @@ namespace Mongoose
             bool handles(string method, string url);
 
         protected:
+			std::string port;
+			struct mg_bind_opts opts;
+			struct mg_mgr mgr;
             volatile bool stopped;
             volatile bool destroyed;
             Sessions sessions;
-            Mutex mutex;
+            //Mutex mutex;
             map<string, string> optionsMap;
-            map<struct mg_connection*, Request *> currentRequests;
-            struct mg_server *server;
+            struct mg_connection *server_connection;
 
 #ifndef NO_WEBSOCKET
             WebSockets websockets;
 #endif
 
             vector<Controller *> controllers;
-
-            // Statistics
-            int requests;
-            int startTime;
     };
 }
 
